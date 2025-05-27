@@ -1,28 +1,46 @@
 import { useEffect, useState } from 'react';
 import './App.css';
 import Square from './kotak.jsx'
+import { findBestMove, cekPemenang } from './algoritma.jsx';
 
 export default function App() {
-  const [histori, setHistori] = useState([Array(9).fill(null)])
-  const [move, setMove] = useState(0)
-  const [isi, setIsi] = useState(Array(9).fill(null))
-  const giliranX = move % 2 === 0
+  const [histori, setHistori] = useState([Array(9).fill(null)]);
+  const [move, setMove] = useState(0);
+  const [isi, setIsi] = useState(Array(9).fill(null));
+  const giliranX = move % 2 === 0;
+  const [giliranAI, setGiliranAI] = useState('O');
 
   const handleClick = (i) => {
-    if (isi[i] || cekPemenang(isi)) return
-    const isiBaru = isi.slice()
-    const historiBaru = [...histori, isiBaru]
-    isiBaru[i] = giliranX ? 'X' : 'O'
-    setHistori(historiBaru)
-    setIsi(isiBaru)
-    setMove(historiBaru.length - 1)
-  }
+    if (isi[i] || cekPemenang(isi)) return;
+    const isiBaru = isi.slice();
+    isiBaru[i] = giliranX ? "X" : "O";
+    const historiBaru = [...histori, isiBaru];
+    setHistori(historiBaru);
+    setIsi(isiBaru);
+    setMove(historiBaru.length - 1);
+  };
+
+  useEffect(() => {
+    if (giliranAI == (giliranX ? 'X' : 'O') && !cekPemenang(isi) && isi.includes(null)) {
+      setTimeout(() => {
+        const aiMove = findBestMove(isi.slice(), giliranAI); // Buat salinan papan untuk AI
+        if (aiMove !== -1) {
+          const isiBaruAI = isi.slice();
+          isiBaruAI[aiMove] = giliranAI;
+          const historiBaruAI = [...histori, isiBaruAI];
+          setHistori(historiBaruAI);
+          setIsi(isiBaruAI);
+          setMove(historiBaruAI.length - 1);
+        }
+      }, 500);
+    }
+  }, [move, isi, histori, giliranX, giliranAI]); // Tambahkan dependensi yang relevan
 
   const undo = () => {
-    if (histori.length === 1) return alert("belum mulai")
-    setIsi(histori[move - 1])
-    setHistori(histori.slice(0, histori.length - 1))
-    setMove(move - 1)
+    if (histori.length <= 2) return alert("belum mulai, tidak bisa undo");
+    setIsi(histori[move - 2])
+    setHistori(histori.slice(0, histori.length - 2))
+    setMove(move - 2)
   }
 
   const reset = () => {
@@ -37,56 +55,33 @@ export default function App() {
     console.log('move ' + move)
   })
   console.log("rendered")
-  const pemenang = cekPemenang(isi)
-  if (pemenang) {
-    setTimeout(() => {
-      alert("Pemenang adalah " + pemenang)
-    }, 100)
-  }else if (move === 9) {
-    setTimeout(() => {
-      alert("Seri")
-    }, 100)
+  const pemenang = cekPemenang(isi);
+  if (pemenang && pemenang !== 'Seri') {
+    alert("Pemenang: " + pemenang);
+    reset();
+  } else if (pemenang === 'Seri') {
+    alert("Game berakhir dengan hasil seri!");
+    reset();
   }
   return (
     <>
+      <h3>
+        Pilih Giliran :
+        <select name="giliran" defaultValue={"O"} onChange={(e) => { reset(); setGiliranAI(e.target.value) }}>
+          <option value="O">X</option>
+          <option value="X">O</option>
+        </select>
+      </h3>
       <div className='status'>
-        <h4>
-        {"Giliran : " + (giliranX ? 'X' : 'O')}
-        </h4>
+        {"Giliran : " + (giliranX ? "X" : "O")}
         <button className="btn" onClick={undo}>Undo</button>
         <button className="btn" onClick={reset}>Reset</button>
       </div>
       <div className="App">
-        <Square value={isi[0]} klik={() => handleClick(0)} />
-        <Square value={isi[1]} klik={() => handleClick(1)} />
-        <Square value={isi[2]} klik={() => handleClick(2)} />
-        <Square value={isi[3]} klik={() => handleClick(3)} />
-        <Square value={isi[4]} klik={() => handleClick(4)} />
-        <Square value={isi[5]} klik={() => handleClick(5)} />
-        <Square value={isi[6]} klik={() => handleClick(6)} />
-        <Square value={isi[7]} klik={() => handleClick(7)} />
-        <Square value={isi[8]} klik={() => handleClick(8)} />
+        {isi.map((val, i) => (
+          <Square key={i} value={val} klik={() => handleClick(i)} />
+        ))}
       </div>
     </>
   );
-}
-
-function cekPemenang(isi) {
-  const win = [
-    [0, 1, 2],
-    [3, 4, 5],
-    [6, 7, 8],
-    [0, 3, 6],
-    [1, 4, 7],
-    [2, 5, 8],
-    [0, 4, 8],
-    [2, 4, 6]
-  ]
-  for (let i = 0; i < win.length; i++) {
-    const [a, b, c] = win[i]
-    if (isi[a] && isi[a] === isi[b] && isi[a] === isi[c]) {
-      return isi[a]
-    }
-  }
-  return false
 }
