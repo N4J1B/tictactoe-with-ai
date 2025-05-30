@@ -61,7 +61,7 @@ Untuk menjalankan proyek ini secara lokal, ikuti langkah-langkah berikut:
 
 1.  **Kloning repositori**:
     ```bash
-    git clone [https://github.com/N4J1B/tictactoe-with-ai.git](https://github.com/N4J1B/tictactoe-with-ai.git)
+    git clone https://github.com/N4J1B/tictactoe-with-ai.git
     cd n4j1b-tictactoe-with-ai
     ```
 
