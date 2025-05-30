@@ -9,6 +9,7 @@ export default function App() {
   const [isi, setIsi] = useState(Array(9).fill(null));
   const giliranX = move % 2 === 0;
   const [giliranAI, setGiliranAI] = useState('O');
+  const [jenisAI, setJenisAI] = useState("Minimax")
 
   const handleClick = (i) => {
     if (isi[i] || cekPemenang(isi)) return;
@@ -20,21 +21,50 @@ export default function App() {
     setMove(historiBaru.length - 1);
   };
 
+  function getAIRL(board, AI) {
+    board = board.map((val) => (val === 'X' ? 1 : val === 'O' ? -1 : 0));
+    fetch(`${import.meta.env.VITE_BACKEND_URL}/predict_move`, {
+      method: "POST",
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ board: board, player_turn: AI === 'X' ? 1 : -1 })
+    }).then(res => res.json())
+      .then(data => {
+        console.log(data);
+        const index = data.move.index;
+        const isiBaruAI = isi.slice();
+        isiBaruAI[index] = giliranAI;
+        const historiBaruAI = [...histori, isiBaruAI];
+        setHistori(historiBaruAI);
+        setIsi(isiBaruAI);
+        setMove(historiBaruAI.length - 1);
+      })
+  }
+
+  function getAISRC(isi, giliranAI) {
+    setTimeout(() => {
+      const aiMove = findBestMove(isi.slice(), giliranAI);
+      if (aiMove !== -1) {
+        const isiBaruAI = isi.slice();
+        isiBaruAI[aiMove] = giliranAI;
+        const historiBaruAI = [...histori, isiBaruAI];
+        setHistori(historiBaruAI);
+        setIsi(isiBaruAI);
+        setMove(historiBaruAI.length - 1);
+      }
+    }, 500);
+  }
+
   useEffect(() => {
     if (giliranAI == (giliranX ? 'X' : 'O') && !cekPemenang(isi) && isi.includes(null)) {
-      setTimeout(() => {
-        const aiMove = findBestMove(isi.slice(), giliranAI); // Buat salinan papan untuk AI
-        if (aiMove !== -1) {
-          const isiBaruAI = isi.slice();
-          isiBaruAI[aiMove] = giliranAI;
-          const historiBaruAI = [...histori, isiBaruAI];
-          setHistori(historiBaruAI);
-          setIsi(isiBaruAI);
-          setMove(historiBaruAI.length - 1);
-        }
-      }, 500);
+      if (jenisAI === "Minimax") {
+        getAISRC(isi, giliranAI);
+      } else if (jenisAI === "AIRL") {
+        getAIRL(isi, giliranAI)
+      }
     }
-  }, [move, isi, histori, giliranX, giliranAI]); // Tambahkan dependensi yang relevan
+  }, [move, isi, histori, giliranX, giliranAI]);
 
   const undo = () => {
     if (histori.length <= 2) return alert("belum mulai, tidak bisa undo");
@@ -49,11 +79,6 @@ export default function App() {
     setHistori(histori.slice(0, 1))
   }
 
-  useEffect(() => {
-    console.log(histori)
-    console.log(isi)
-    console.log('move ' + move)
-  })
   console.log("rendered")
   const pemenang = cekPemenang(isi);
   if (pemenang && pemenang !== 'Seri') {
@@ -65,13 +90,21 @@ export default function App() {
   }
   return (
     <>
-      <h3>
-        Pilih Giliran :
+      <div className='judul'>
+        <h3>Pilih Jenis AI :</h3>
+        <select name="jenisAI" defaultValue={"Minimax"} onChange={(e) => { reset(); setJenisAI(e.target.value) }}>
+          <option value="Minimax">Minimax</option>
+          <option value="AIRL">AIRL</option>
+          <option value="Random">Tanpa AI</option>
+        </select>
+      </div>
+      <div className='judul'>
+        <h3>Pilih Giliran :</h3>
         <select name="giliran" defaultValue={"O"} onChange={(e) => { reset(); setGiliranAI(e.target.value) }}>
           <option value="O">X</option>
           <option value="X">O</option>
         </select>
-      </h3>
+      </div>
       <div className='status'>
         {"Giliran : " + (giliranX ? "X" : "O")}
         <button className="btn" onClick={undo}>Undo</button>

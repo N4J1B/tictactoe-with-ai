@@ -16,12 +16,18 @@
 
 select{
   margin-left: 10px;
-  width: 50px;
+  width: max-content;
   height: 30px;
   border-radius: 5px;
   border: 1px solid #ccc;
   padding: 5px;
   font-size: 16px;
+}
+
+.judul{
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .App{
